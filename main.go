@@ -13,16 +13,18 @@ import (
 func main() {
 	//создание папки для временного хранения в проекте
 	createTempFolder()
-	var ParentFolderPath string = "/home/ilya/Documents/test"
+	ParentFolderPath := "/home/ilya/Documents/test @ tar"
+	typeRecognition(ParentFolderPath)
+
 	//fmt.Println("Enter folder which you want to be ISOed, ZIPed")
 	//fmt.Scanf("%s\n", &ParentFolderPath)
-	_, err := os.Stat(ParentFolderPath)
+	/*_, err := os.Stat(ParentFolderPath)
 	if err == nil {
 		fmt.Println("Ready to go")
 	} else {
 		fmt.Println("Alredy exists")
 	}
-	compressToTar(ParentFolderPath, createTempFolder())
+	compressToTar(ParentFolderPath, createTempFolder())*/
 }
 func createTempFolder() string {
 	err := os.Mkdir("temp_dir", 0755)
@@ -127,4 +129,16 @@ func untar(victim, destination string) error {
 		}
 	}
 	return nil
+}
+
+//не работает
+func typeRecognition(ParentFolderPath string) {
+	var symbol string = "@"
+	folder := []string{ParentFolderPath}
+	i := strings.Index(ParentFolderPath, symbol)
+	slice := folder[i:len(ParentFolderPath)]
+	fmt.Println(slice)
+	//fmt.Println("Index", i)
+	//fmt.Println(reflect.TypeOf(i)) 	i - int
+	//fmt.Println(strings.TrimPrefix(ParentFolderPath, symbol))
 }
