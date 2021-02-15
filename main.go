@@ -7,14 +7,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"archive/zip"
 )
 
 //creating temp dir for files
 func main() {
 	//создание папки для временного хранения в проекте
-	createTempFolder()
+	//createTempFolder()
 	ParentFolderPath := "/home/ilya/Documents/test @ tar"
-	typeRecognition(ParentFolderPath)
+	target := "/home/ilya/Documents/test"
+	typeRecognition(ParentFolderPath, target)
 
 	//fmt.Println("Enter folder which you want to be ISOed, ZIPed")
 	//fmt.Scanf("%s\n", &ParentFolderPath)
@@ -130,15 +132,65 @@ func untar(victim, destination string) error {
 	}
 	return nil
 }
-
 //не работает
-func typeRecognition(ParentFolderPath string) {
-	var symbol string = "@"
-	folder := []string{ParentFolderPath}
-	i := strings.Index(ParentFolderPath, symbol)
-	slice := folder[i:len(ParentFolderPath)]
-	fmt.Println(slice)
-	//fmt.Println("Index", i)
-	//fmt.Println(reflect.TypeOf(i)) 	i - int
-	//fmt.Println(strings.TrimPrefix(ParentFolderPath, symbol))
+func compressToZIP(filename string, files []string){
+	newZipFile, err := os.Create(filename)
+    if err != nil {
+        return err
+    }
+    defer newZipFile.Close()
+
+    zipWriter := zip.NewWriter(newZipFile)
+    defer zipWriter.Close()
+
+    // Add files to zip
+    for _, file := range files {
+        if err = AddFileToZip(zipWriter, file); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+func AddFileToZip(zipWriter *zip.Writer, filename string) error {
+
+    fileToZip, err := os.Open(filename)
+    if err != nil {
+        return err
+    }
+    defer fileToZip.Close()
+
+    // Get the file information
+    info, err := fileToZip.Stat()
+    if err != nil {
+        return err
+    }
+
+    header, err := zip.FileInfoHeader(info)
+    if err != nil {
+        return err
+    }
+
+    // Using FileInfoHeader() above only uses the basename of the file. If we want
+    // to preserve the folder structure we can overwrite this with the full path.
+    header.Name = filename
+
+    // Change to deflate to gain better compression
+    // see http://golang.org/pkg/archive/zip/#pkg-constants
+    header.Method = zip.Deflate
+
+    writer, err := zipWriter.CreateHeader(header)
+    if err != nil {
+        return err
+    }
+    _, err = io.Copy(writer, fileToZip)
+    return err
+}
+//распознание типа сжатия
+func typeRecognition(ParentFolderPath string, target string) {
+	if strings.Contains(ParentFolderPath, "tar"){	
+		compressToTar(ParentFolderPath, target)
+	} else if strings.Contains(ParentFolderPath, "zip"){
+		//zip func
+	}
+
 }
