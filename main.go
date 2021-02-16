@@ -2,12 +2,13 @@ package main
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"archive/zip"
 )
 
 //creating temp dir for files
@@ -125,72 +126,80 @@ func untar(victim, destination string) error {
 			return err
 		}
 		defer file.Close()
-		_, err = io.Copy(file, tarReader)
+
 		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
-//не работает
-func compressToZIP(filename string, files []string){
+
+// сжатие в zip
+func compressToZIP(filename string, files []string) {
 	newZipFile, err := os.Create(filename)
-    if err != nil {
-        return err
-    }
-    defer newZipFile.Close()
+	if err != nil {
+		return
+	}
 
-    zipWriter := zip.NewWriter(newZipFile)
-    defer zipWriter.Close()
+	defer newZipFile.Close()
 
-    // Add files to zip
-    for _, file := range files {
-        if err = AddFileToZip(zipWriter, file); err != nil {
-            return err
-        }
-    }
-    return nil
+	zipWriter := zip.NewWriter(newZipFile)
+	defer zipWriter.Close()
+
+	// Add files to zip
+	for _, file := range files {
+		if err = AddFileToZip(zipWriter, file); err != nil {
+			return
+		}
+	}
 }
+
+//AddFileToZip добавление файлов в архив
 func AddFileToZip(zipWriter *zip.Writer, filename string) error {
 
-    fileToZip, err := os.Open(filename)
-    if err != nil {
-        return err
-    }
-    defer fileToZip.Close()
+	fileToZip, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer fileToZip.Close()
 
-    // Get the file information
-    info, err := fileToZip.Stat()
-    if err != nil {
-        return err
-    }
+	// информация о файле
+	info, err := fileToZip.Stat()
+	if err != nil {
+		return err
+	}
+	//FileInfoHeader сохраняет архитектуру директории, которая будет сжата
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
 
-    header, err := zip.FileInfoHeader(info)
-    if err != nil {
-        return err
-    }
+	header.Name = filename
+	header.Method = zip.Deflate
 
-    // Using FileInfoHeader() above only uses the basename of the file. If we want
-    // to preserve the folder structure we can overwrite this with the full path.
-    header.Name = filename
-
-    // Change to deflate to gain better compression
-    // see http://golang.org/pkg/archive/zip/#pkg-constants
-    header.Method = zip.Deflate
-
-    writer, err := zipWriter.CreateHeader(header)
-    if err != nil {
-        return err
-    }
-    _, err = io.Copy(writer, fileToZip)
-    return err
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, fileToZip)
+	return err
 }
+
 //распознание типа сжатия
 func typeRecognition(ParentFolderPath string, target string) {
-	if strings.Contains(ParentFolderPath, "tar"){	
+	filesSlice := []string{ParentFolderPath}
+	filename := "filename"
+	if strings.Contains(ParentFolderPath, "tar") {
 		compressToTar(ParentFolderPath, target)
-	} else if strings.Contains(ParentFolderPath, "zip"){
-		//zip func
+	} else if strings.Contains(ParentFolderPath, "zip") {
+		files, err := ioutil.ReadDir(ParentFolderPath)
+		if err != nil {
+			panic(err)
+		}
+		for i, file := range files {
+			filesSlice[i] = file.Name()
+		}
+		compressToZIP(filename, filesSlice)
 	}
 
 }
