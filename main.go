@@ -8,7 +8,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strconv"
 	"strings"
+	"time"
 )
 
 //creating temp dir for files
@@ -19,21 +22,13 @@ func main() {
 	target := "/home/ilya/Documents/test"
 	typeRecognition(ParentFolderPath, target)
 
-	//fmt.Println("Enter folder which you want to be ISOed, ZIPed")
-	//fmt.Scanf("%s\n", &ParentFolderPath)
-	/*_, err := os.Stat(ParentFolderPath)
-	if err == nil {
-		fmt.Println("Ready to go")
-	} else {
-		fmt.Println("Alredy exists")
-	}
-	compressToTar(ParentFolderPath, createTempFolder())*/
 }
 func createTempFolder() string {
 	err := os.Mkdir("temp_dir", 0755)
 	if err != nil {
 		//log.Fatal(err)
-		//panic(err)
+		LogActivity(err.(*strconv.NumError))
+		panic(err)
 	} else if os.IsExist(err) {
 		fmt.Println("folder is already exists")
 	}
@@ -186,7 +181,7 @@ func AddFileToZip(zipWriter *zip.Writer, filename string) error {
 }
 
 //распознание типа сжатия
-func typeRecognition(ParentFolderPath string, target string) {
+func typeRecognition(ParentFolderPath string, target string) string {
 	filesSlice := []string{ParentFolderPath}
 	filename := "filename"
 	if strings.Contains(ParentFolderPath, "tar") {
@@ -201,5 +196,19 @@ func typeRecognition(ParentFolderPath string, target string) {
 		}
 		compressToZIP(filename, filesSlice)
 	}
+	return target
+}
 
+//LogActivity логирование событий
+//logString - строка для записи в лог файл
+func LogActivity(logString string) {
+	date := time.Now()
+	fmt.Println(reflect.TypeOf(date))
+	txtTitle := "log" + date.Format("2006-01-02 15:04:05") + ".txt"
+	logtxt, err := os.OpenFile(txtTitle, os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		panic(err)
+	}
+	txt := date.Format("2006-01-02 15:04:05") + logString
+	io.WriteString(logtxt, txt)
 }
